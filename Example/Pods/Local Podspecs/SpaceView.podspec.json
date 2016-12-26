@@ -1,0 +1,22 @@
+{
+  "name": "SpaceView",
+  "version": "0.1.0",
+  "summary": "A short description of SpaceView.",
+  "description": "TODO: Add long description of the pod here.",
+  "homepage": "https://github.com/<GITHUB_USERNAME>/SpaceView",
+  "license": {
+    "type": "MIT",
+    "file": "LICENSE"
+  },
+  "authors": {
+    "Xopoko": "horokko@mail.ru"
+  },
+  "source": {
+    "git": "https://github.com/<GITHUB_USERNAME>/SpaceView.git",
+    "tag": "0.1.0"
+  },
+  "platforms": {
+    "ios": "8.0"
+  },
+  "source_files": "SpaceView/Classes/**/*"
+}

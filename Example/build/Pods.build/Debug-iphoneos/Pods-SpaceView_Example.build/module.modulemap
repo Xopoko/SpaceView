@@ -1,0 +1,6 @@
+framework module Pods_SpaceView_Example {
+  umbrella header "Pods-SpaceView_Example-umbrella.h"
+
+  export *
+  module * { export * }
+}

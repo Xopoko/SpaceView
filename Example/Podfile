@@ -1,0 +1,11 @@
+use_frameworks!
+
+target 'SpaceView_Example' do
+  pod 'SpaceView', :path => '../'
+
+  target 'SpaceView_Tests' do
+    inherit! :search_paths
+
+    
+  end
+end

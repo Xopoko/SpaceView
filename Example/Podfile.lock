@@ -1,0 +1,16 @@
+PODS:
+  - SpaceView (0.1.0)
+
+DEPENDENCIES:
+  - SpaceView (from `../`)
+
+EXTERNAL SOURCES:
+  SpaceView:
+    :path: ../
+
+SPEC CHECKSUMS:
+  SpaceView: 0c27de785778112c524ef32c6d4a35db7f095036
+
+PODFILE CHECKSUM: b68161f9e05ecc8cb11e13daf47a563a70a30308
+
+COCOAPODS: 1.2.0.beta.1
