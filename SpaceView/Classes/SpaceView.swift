@@ -41,6 +41,7 @@ public class SpaceView {
     var titleFont = UIFont.systemFont(ofSize: 17)
     var descriptionFont = UIFont.systemFont(ofSize: 17)
     var shouldAutoHide = true
+    var spaceStyle: SpaceStyles? = nil
     
     
     init (spaceOptions: [spaceOptions]?) {
@@ -65,8 +66,6 @@ public class SpaceView {
     }
     
     func show() {
-//        let appDelegate = UIApplication.shared.delegate as? AppDelegate
-//        self.window = appDelegate?.window
         mWindow = UIWindow(frame: CGRect(x: 0, y: 0, width: screenWidth, height: spaceHeight))
         mWindow?.windowLevel = UIWindowLevelStatusBar
         mWindow?.isHidden = false
@@ -141,6 +140,8 @@ public class SpaceView {
             case let .titleFont(font) : titleFont = font
             case let .descriptionFont(font) : descriptionFont = font
             case let .shouldAutoHide(should) : shouldAutoHide = should
+            case let .spaceStyle(style) : spaceStyle = style
+                
                 
             }
         }
@@ -252,54 +253,73 @@ public class SpaceView {
     
     private func makeContent() -> UIView {
         let contentView = UIView()
-        contentView.backgroundColor = spaceColor
+        if spaceStyle != nil {
+            switch spaceStyle! {
+            case .success:
+                contentView.backgroundColor = UIColor(red: 27.0/255.0, green: 94.0/255.0, blue: 32.0/255.0, alpha: 0.90)
+            case .error:
+                contentView.backgroundColor = UIColor(red: 183.0/255.0, green: 28.0/255.0, blue: 28.0/255.0, alpha: 0.90)
+            case .warning:
+                contentView.backgroundColor = UIColor(red: 245.0/255.0, green: 127.0/255.0, blue: 23.0/255.0, alpha: 0.90)
+            }
+        } else {
+            contentView.backgroundColor = spaceColor
+        }
+        
+        var imageView: UIImageView? = nil
+        
+        if image != nil {
+            imageView = UIImageView()
+            imageView!.image = image
+            contentView.addSubview(imageView!)
+            imageView!.translatesAutoresizingMaskIntoConstraints = false
+
+            let imageCenterY = NSLayoutConstraint(item: imageView!, attribute: NSLayoutAttribute.centerY, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.centerY, multiplier: 1, constant: 0)
+            let imageLeading = NSLayoutConstraint(item: imageView!, attribute: NSLayoutAttribute.leading, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.leading, multiplier: 1, constant: 8)
+            let imageHeight = NSLayoutConstraint(item: imageView!, attribute: NSLayoutAttribute.height, relatedBy: NSLayoutRelation.equal, toItem: nil, attribute: NSLayoutAttribute.notAnAttribute, multiplier: 1, constant: 35)
+            let imageWidth = NSLayoutConstraint(item: imageView!, attribute: NSLayoutAttribute.width, relatedBy: NSLayoutRelation.equal, toItem: nil, attribute: NSLayoutAttribute.notAnAttribute, multiplier: 1, constant: 35)
+            contentView.addConstraints([imageCenterY, imageLeading, imageHeight, imageWidth])
+        }
         
         let titleView = UILabel()
         titleView.text = spaceTitle
         titleView.textColor = .white
-        titleView.translatesAutoresizingMaskIntoConstraints = false
+        titleView.textAlignment = .center
         contentView.addSubview(titleView)
+        titleView.translatesAutoresizingMaskIntoConstraints = false
         
-        let titleCenterX = NSLayoutConstraint(item: titleView, attribute: NSLayoutAttribute.centerX, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.centerX, multiplier: 1, constant: 0)
         let titleCenterY = NSLayoutConstraint(item: titleView, attribute: NSLayoutAttribute.centerY, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.centerY, multiplier: 1, constant: 0)
+        var titleLeading = NSLayoutConstraint(item: titleView, attribute: NSLayoutAttribute.leading, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.leading, multiplier: 1, constant: 0)
+        let titleTrailing = NSLayoutConstraint(item: titleView, attribute: NSLayoutAttribute.trailing, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.trailing, multiplier: 1, constant: 0)
         
+        if let imgView = imageView {
+            titleLeading = NSLayoutConstraint(item: titleView, attribute: NSLayoutAttribute.leading, relatedBy: NSLayoutRelation.equal, toItem: imgView, attribute: NSLayoutAttribute.trailing, multiplier: 1, constant: 8)
+        }
         
         if !spaceDescription.isEmpty {
             descriptionView.text = spaceDescription
             descriptionView.textColor = .white
-            
+            descriptionView.lineBreakMode = .byTruncatingTail
+            descriptionView.numberOfLines = 2
+            descriptionView.textAlignment = .center
             contentView.addSubview(descriptionView)
             
             descriptionView.translatesAutoresizingMaskIntoConstraints = false
             let titleTop = NSLayoutConstraint(item: titleView, attribute: NSLayoutAttribute.top, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.top, multiplier: 1, constant: 8)
-            let titleCenterX = NSLayoutConstraint(item: titleView, attribute: NSLayoutAttribute.centerX, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.centerX, multiplier: 1, constant: 0)
-            
+
             let descrTop = NSLayoutConstraint(item: descriptionView, attribute: NSLayoutAttribute.top, relatedBy: NSLayoutRelation.lessThanOrEqual, toItem: titleView, attribute: NSLayoutAttribute.bottom, multiplier: 1, constant: 8)
-            let descrCenterX = NSLayoutConstraint(item: descriptionView, attribute: NSLayoutAttribute.centerX, relatedBy: NSLayoutRelation.equal, toItem: titleView, attribute: NSLayoutAttribute.centerX, multiplier: 1, constant: 0)
             let descBot = NSLayoutConstraint(item: descriptionView, attribute: NSLayoutAttribute.bottom, relatedBy: NSLayoutRelation.lessThanOrEqual, toItem: contentView, attribute: NSLayoutAttribute.bottom, multiplier: 1, constant: -8)
-            
-            contentView.addConstraints([titleTop, titleCenterX, descrTop, descrCenterX, descBot])
+            var descLeading = NSLayoutConstraint(item: descriptionView, attribute: NSLayoutAttribute.leading, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.leading, multiplier: 1, constant: 8)
+            let descTrailing = NSLayoutConstraint(item: descriptionView, attribute: NSLayoutAttribute.trailing, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.trailing, multiplier: 1, constant: -8)
+            if let imgView = imageView {
+                descLeading = NSLayoutConstraint(item: descriptionView, attribute: NSLayoutAttribute.leading, relatedBy: NSLayoutRelation.equal, toItem: imgView, attribute: NSLayoutAttribute.trailing, multiplier: 1, constant: 8)
+            }
+            contentView.addConstraints([titleTop, titleLeading, titleTrailing, descrTop, descBot, descLeading, descTrailing])
             
         } else {
-            contentView.addConstraints([titleCenterX, titleCenterY])
+            contentView.addConstraints([ titleCenterY, titleLeading, titleTrailing])
         }
-        
-        if image != nil {
-            let imageView = UIImageView()
-            imageView.image = image
-            contentView.addSubview(imageView)
-            descriptionView.translatesAutoresizingMaskIntoConstraints = false
-            
-            let imageCenterY = NSLayoutConstraint(item: imageView, attribute: NSLayoutAttribute.centerY, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.centerY, multiplier: 1, constant: 0)
-            let imageLeading = NSLayoutConstraint(item: imageView, attribute: NSLayoutAttribute.leading, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.leading, multiplier: 1, constant: 0)
-            let imageHeight = NSLayoutConstraint(item: imageView, attribute: NSLayoutAttribute.height, relatedBy: NSLayoutRelation.equal, toItem: nil, attribute: NSLayoutAttribute.notAnAttribute, multiplier: 1, constant: 50)
-            let imageWidth = NSLayoutConstraint(item: imageView, attribute: NSLayoutAttribute.width, relatedBy: NSLayoutRelation.equal, toItem: nil, attribute: NSLayoutAttribute.notAnAttribute, multiplier: 1, constant: 50)
-            contentView.addConstraints([imageCenterY, imageLeading, imageHeight, imageWidth])
-            
-        }
-        
-        
-        
+    
         return contentView
     }
     
@@ -335,6 +355,12 @@ public enum HideDirection {
     case top
 }
 
+public enum SpaceStyles {
+    case success
+    case error
+    case warning
+}
+
 public enum spaceOptions {
     case spaceColor(color: UIColor)
     case spaceDescription(text: String)
@@ -350,7 +376,7 @@ public enum spaceOptions {
     case spaceShowDelay(delay: Double)
     case spaceReturnDelay(delay: Double)
     case possibleDirectionToHide([HideDirection])
-    case image(img: UIImage)
+    case image(img: UIImage?)
     case titleView(view: UILabel)
     case descriptionView(view: UILabel)
     case titleColor(color: UIColor)
@@ -358,6 +384,8 @@ public enum spaceOptions {
     case titleFont(font: UIFont)
     case descriptionFont(font: UIFont)
     case shouldAutoHide(should: Bool)
+    case spaceStyle(style: SpaceStyles?)
+    
     
 }
 
