@@ -16,6 +16,7 @@ public class SpaceView {
     private var window: UIWindow?
     private var offsetX: CGFloat = 0.0
     private var offsetY: CGFloat = 0.0
+    private var offsetAlpha: CGFloat = 0.0
     private var isTouched = false
     
     var spaceColor: UIColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.90)
@@ -32,7 +33,7 @@ public class SpaceView {
     var spaceHideDelay = 0.0
     var spaceShowDelay = 0.0
     var spaceReturnDelay = 0.0
-    var possibleDirectionToHide = [HideDirection.left, HideDirection.right, HideDirection.top]
+    var possibleDirectionToHide = [HideDirection.left, HideDirection.right, HideDirection.top, HideDirection.bot]
     var image: UIImage? = nil
     var titleView = UILabel()
     var descriptionView = UILabel()
@@ -90,10 +91,9 @@ public class SpaceView {
     @objc func handleTap(_ sender: UITapGestureRecognizer? = nil) {
         if self.tapAction != nil {
             self.tapAction!()
-        } else {
-            if self.canHideByTap {
-                self.hideSpaceView(direction: .top)
-            }
+        }
+        if self.canHideByTap {
+            self.hideSpaceView(direction: .top)
         }
     }
     
@@ -108,6 +108,10 @@ public class SpaceView {
                 break
             case .top:
                 self.spaceView?.y = 0 - self.spaceHeight
+                break
+            case .bot:
+                self.spaceView?.frame.y = self.offsetY + self.spaceHeight
+                self.spaceView?.alpha = 0
                 break
             }
         }), completion: ({ some in
@@ -141,8 +145,6 @@ public class SpaceView {
             case let .descriptionFont(font) : descriptionFont = font
             case let .shouldAutoHide(should) : shouldAutoHide = should
             case let .spaceStyle(style) : spaceStyle = style
-                
-                
             }
         }
     }
@@ -159,6 +161,7 @@ public class SpaceView {
         UIView.animate(withDuration: spaceReturnDuration, delay: spaceReturnDelay, options: .curveEaseOut, animations: ({
             self.spaceView?.x = 0
             self.spaceView?.y = 0
+            self.spaceView?.alpha = 1.0
         }), completion: ({ a in
             self.offsetX = 0
             self.offsetY = 0
@@ -194,52 +197,81 @@ public class SpaceView {
                 
                 self.offsetX = spaceView.frame.x
                 self.offsetY = spaceView.frame.y
-                
-                if spaceView.frame.x < -(spaceView.w / 4) || (spaceView.frame.x > spaceView.w / 4) {
-                    self.hideSpaceView(direction: spaceView.frame.x > 0 ? .right : .left)
-                    break
+                let translation = gesture.translation(in: spaceView)
+
+                if translation.x > screenWidth / 4 {
+                    hideSpaceView(direction: .right)
+                } else if translation.x < -(screenWidth / 4)  {
+                    hideSpaceView(direction: .left)
+                } else if translation.y > spaceView.h * 1.5 {
+                    hideSpaceView(direction: .bot)
+                } else if translation.y < -(spaceView.h / 3) {
+                    hideSpaceView(direction: .top)
                 } else {
-                    self.returnView()
+                    returnView()
                 }
-                
-                if (self.offsetY < -(spaceView.h / 4)) {
-                    self.hideSpaceView(direction: .top)
-                } else {
-                    self.returnView()
-                }
+
             case.changed:
                 self.isTouched = true
-                for direction in self.possibleDirectionToHide {
-                    switch direction {
-                    case .left:
-                        if gesture.velocity(in: spaceView).x < 0 {
-                            if gesture.translation(in: spaceView).x != 0 {
-                                if spaceView.frame.y == 0 {
-                                    spaceView.frame.x = gesture.translation(in: spaceView).x + self.offsetX
-                                }
-                            }
-                        }
-                        break
-                    case .right:
-                        if spaceView.frame.x > 0 || gesture.velocity(in: spaceView).x > 0 {
-                            if gesture.translation(in: spaceView).x != 0 {
-                                if spaceView.frame.y == 0 {
-                                    spaceView.frame.x = gesture.translation(in: spaceView).x + self.offsetX
-                                }
-                            }
-                        }
-                        break
-                    case .top:
-                        if gesture.velocity(in: spaceView).y < 0 {
-                            if gesture.translation(in: spaceView).x == 0 {
-                                if spaceView.frame.x == 0 {
-                                    if gesture.translation(in: spaceView).y <= 0 {
-                                        spaceView.frame.y = gesture.translation(in: spaceView).y + self.offsetY
+                let velocity = gesture.velocity(in: spaceView)
+                let translation = gesture.translation(in: spaceView)
+                
+                if abs(velocity.x) > abs(velocity.y) && spaceView.frame.y == 0 {
+                    for direction in self.possibleDirectionToHide {
+                        switch direction {
+                            case .left:
+                                if translation.x <= 0 {
+                                    spaceView.frame.x = translation.x
+                                } else {
+                                    if self.possibleDirectionToHide.contains(.right) {
+                                        break
+                                    } else {
+                                        spaceView.frame.x = 0
                                     }
                                 }
-                            }
+                            case .right:
+                                if translation.x >= 0 {
+                                    spaceView.frame.x = translation.x
+                                } else {
+                                    if self.possibleDirectionToHide.contains(.left) {
+                                        break
+                                    } else {
+                                        spaceView.frame.x = 0
+                                    }
+                                }
+                            default:
+                                break
                         }
-                        break
+                    }
+                }
+                if abs(velocity.y) > abs(velocity.x) && spaceView.frame.x == 0 {
+                    for direction in self.possibleDirectionToHide {
+                        switch direction {
+                            case .top:
+                                if translation.y <= 0 {
+                                    spaceView.frame.y = translation.y
+                                } else {
+                                    if self.possibleDirectionToHide.contains(.bot) {
+                                        break
+                                    } else {
+                                        spaceView.frame.y = 0
+                                    }
+                                }
+                            case .bot:
+                                if translation.y >= 0 {
+                                    spaceView.frame.y = translation.y
+                                    spaceView.alpha = 1.00 - ((gesture.translation(in: spaceView).y) / 100)
+                                } else {
+                                    if self.possibleDirectionToHide.contains(.top) {
+                                        break
+                                    } else {
+                                        spaceView.frame.y = 0
+                                    }
+                                }
+                            default:
+                                break
+                        }
+                        
                     }
                 }
                 break
@@ -284,6 +316,7 @@ public class SpaceView {
         let titleView = UILabel()
         titleView.text = spaceTitle
         titleView.textColor = .white
+        titleView.numberOfLines = 2
         titleView.textAlignment = .center
         contentView.addSubview(titleView)
         titleView.translatesAutoresizingMaskIntoConstraints = false
@@ -323,13 +356,10 @@ public class SpaceView {
         return contentView
     }
     
-    
-    /// EZSE: Returns current screen orientation
     var screenOrientation: UIInterfaceOrientation {
         return UIApplication.shared.statusBarOrientation
     }
     
-    /// EZSE: Returns screen width
     var screenWidth: CGFloat {
         if UIInterfaceOrientationIsPortrait(screenOrientation) {
             return UIScreen.main.bounds.size.width
@@ -353,6 +383,7 @@ public enum HideDirection {
     case right
     case left
     case top
+    case bot
 }
 
 public enum SpaceStyles {
@@ -385,8 +416,6 @@ public enum spaceOptions {
     case descriptionFont(font: UIFont)
     case shouldAutoHide(should: Bool)
     case spaceStyle(style: SpaceStyles?)
-    
-    
 }
 
 extension UIView {

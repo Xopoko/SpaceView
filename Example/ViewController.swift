@@ -19,6 +19,7 @@ class ViewController: UIViewController {
     private var leftSwipeAccepted = true
     private var topSwipeAccepted = true
     private var rightSwipeAccepted = true
+    private var botSwipeAccepted = true
     private var spaceStyle: SpaceStyles? = nil
     private var spaceTitle = "Title"
     private var spaceDescr = "Description"
@@ -43,6 +44,8 @@ class ViewController: UIViewController {
                 spaceStyle = .error
             case 2:
                 spaceStyle = .warning
+            case 3:
+                spaceStyle = nil
             default:
                 break
             }
@@ -50,6 +53,7 @@ class ViewController: UIViewController {
     }
     
     @IBAction func showSpace(_ sender: Any) {
+        image = nil
         possibleDirectionsToHide.removeAll()
         
         if spaceStyle != nil {
@@ -84,6 +88,9 @@ class ViewController: UIViewController {
         if topSwipeAccepted {
             possibleDirectionsToHide.append(.top)
         }
+        if botSwipeAccepted {
+            possibleDirectionsToHide.append(.bot)
+        }
         
         self.showSpace(title: spaceTitle, description: spaceDescr, spaceOptions: [
             .spaceHideTimer(timer: timeToAutoHide),
@@ -105,6 +112,10 @@ class ViewController: UIViewController {
             timeToAutoHide = stepper.value
             autohideTimeLabel.text = String(stepper.value)
         }
+    }
+    
+    @IBAction func BotSwipeDirectionSwitch(_ sender: UISwitch) {
+            botSwipeAccepted = sender.isOn
     }
     
     @IBAction func TopSwipeDirectionSwitch(_ sender: Any) {
