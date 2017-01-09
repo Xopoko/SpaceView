@@ -7,24 +7,28 @@
 [![Platform](https://img.shields.io/cocoapods/p/SpaceView.svg?style=flat)](http://cocoapods.org/pods/SpaceView)
 
 ## Example
+
+<img src="https://cloud.githubusercontent.com/assets/6337061/21762103/ef8748ce-d667-11e6-83c7-4a058e49e2d5.gif" width="301" height="590" alt="SpaceView"/> 
+
 - SpaceView On top
-<img src="https://cloud.githubusercontent.com/assets/6337061/21762103/ef8748ce-d667-11e6-83c7-4a058e49e2d5.gif" width="301" height="590" alt="SpaceView"/>
 ```swift
 //View will show on top
 self.showSpace(title: "title", description: "description", spaceOptions: [.spacePosition(position: .top)
 ])
 ```
 
-- SpaceView On bottom
 <img src="https://cloud.githubusercontent.com/assets/6337061/21762101/ef869e38-d667-11e6-90c4-3d9de76f8e29.gif" width="301" height="590" alt="SpaceView"/>
+
+- SpaceView On bottom
 ```swift
 //View will show on bottom
 self.showSpace(title: "title", description: "description", spaceOptions: [.spacePosition(position: .bot)
 ])
 ```
 
-- SpaceView with default styles
 <img src="https://cloud.githubusercontent.com/assets/6337061/21762102/ef86d196-d667-11e6-84ad-309193ee8e09.gif" width="301" height="590" alt="SpaceView"/>
+
+- SpaceView with default styles
 ```swift
 self.showSpace(title: "title", description: "description", spaceOptions: [.spaceStyle(style: .success)
 ])
