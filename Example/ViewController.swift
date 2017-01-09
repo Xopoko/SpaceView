@@ -25,6 +25,7 @@ class ViewController: UIViewController {
     private var spaceDescr = "Description"
     private var image: UIImage? = nil
     private var withImage = false
+    private var spacePosition: SpacePosition = .top
     
     var possibleDirectionsToHide: [HideDirection] = []
 
@@ -33,6 +34,19 @@ class ViewController: UIViewController {
         autohideTimeLabel.text = String(timeStepper.value)
         timeToAutoHide = timeStepper.value
 
+    }
+    
+    @IBAction func positionsChanged(_ sender: Any) {
+        if let sc = sender as? UISegmentedControl {
+            switch sc.selectedSegmentIndex {
+            case 0:
+                spacePosition = .top
+            case 1:
+                spacePosition = .bot
+            default:
+                break
+            }
+        }
     }
     
     @IBAction func styleChanged(_ sender: Any) {
@@ -97,7 +111,9 @@ class ViewController: UIViewController {
             .possibleDirectionToHide(possibleDirectionsToHide),
             .shouldAutoHide(should: shouldAutoHide),
             .spaceStyle(style: spaceStyle),
-            .image(img: image)
+            .image(img: image),
+            .spacePosition(position: spacePosition),
+            .swipeAction {print("SWIPE")},
             ])
     }
     
