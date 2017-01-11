@@ -69,8 +69,8 @@ To run the example project, clone the repo, and run `pod install` from the Examp
 
 ## Requirements
 - iOS 8.0
-- xcode 8.2
-- 
+- Xcode 8.2
+
 ## Installation
 
 SpaceView is available through [CocoaPods](http://cocoapods.org). To install
