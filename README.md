@@ -1,11 +1,11 @@
 # SpaceView
 
 [![CI Status](http://img.shields.io/travis/Xopoko/SpaceView.svg?style=flat)](https://travis-ci.org/Xopoko/SpaceView)
-
 [![Version](https://img.shields.io/cocoapods/v/SpaceView.svg?style=flat)](http://cocoapods.org/pods/SpaceView)
 [![License](https://img.shields.io/cocoapods/l/SpaceView.svg?style=flat)](http://cocoapods.org/pods/SpaceView)
 [![Platform](https://img.shields.io/cocoapods/p/SpaceView.svg?style=flat)](http://cocoapods.org/pods/SpaceView)
 
+![space](https://cloud.githubusercontent.com/assets/6337061/21842428/c0dfb31c-d7f7-11e6-8402-40ffac91f960.png)
 ## Example
 
 <img src="https://cloud.githubusercontent.com/assets/6337061/21762103/ef8748ce-d667-11e6-83c7-4a058e49e2d5.gif" width="301" height="590" alt="SpaceView"/> 
