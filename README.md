@@ -13,7 +13,7 @@
 
 - SpaceView On top
 ```swift
-//View will show on top
+//View will be shown on the top
 self.showSpace(title: "title", description: "description", spaceOptions: [.spacePosition(position: .top)
 ])
 ```
@@ -22,7 +22,7 @@ self.showSpace(title: "title", description: "description", spaceOptions: [.space
 
 - SpaceView On bottom
 ```swift
-//View will show on bottom
+//View will be shown at the bottom
 self.showSpace(title: "title", description: "description", spaceOptions: [.spacePosition(position: .bot)
 ])
 ```
@@ -51,7 +51,7 @@ self.showSpace(title: "title", description: "description", spaceOptions: [ .shou
 
 - SpaceView set image
 ```swift
-//Image which draw on right side of spaceView
+//Image which will be shown on the right side of spaceView
 self.showSpace(title: "title", description: "description", spaceOptions: [.image(img: UIImage()),
 ])
 ```
