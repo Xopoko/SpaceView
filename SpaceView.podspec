@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'SpaceView'
-  s.version          = '1.0.3'
+  s.version          = '1.0.4'
   s.summary          = 'Swift library, for showing awesome messages!'
 
 # This description is used to generate tags and improve search results.
@@ -18,7 +18,7 @@ Pod::Spec.new do |s|
 #   * Finally, don't worry about the indent, CocoaPods strips it!
 
   s.description      = <<-DESC
-Library to display the amazing messages to alert the user. You can easily recall them. Incredibly simple and easy to change to suit your requirements.
+Library to display the amazing messages to alert the user. You can easily call them. Incredibly simple and easy to change to suit your requirements.
                        DESC
 
   s.homepage         = 'https://github.com/Xopoko/SpaceView'

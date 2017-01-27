@@ -60,11 +60,11 @@ public class SpaceView {
     }
     
     private var mWindow: UIWindow?
-    private var window: UIWindow?
     private var offsetX: CGFloat = 0.0
     private var offsetY: CGFloat = 0.0
     private var offsetAlpha: CGFloat = 0.0
     private var isTouched = false
+    private var canRemoveWindow = true
     
     init (spaceOptions: [spaceOptions]?) {
         if let options = spaceOptions {
@@ -122,132 +122,147 @@ public class SpaceView {
     @objc func handleTap(_ sender: UITapGestureRecognizer? = nil) {
             self.tapAction?()
         if self.canHideByTap {
-            self.hideSpaceView(direction: .top)
+            self.hideSpaceView(direction: .top, isManualy: true)
         }
     }
 
     @objc func handleHideGesture(_ gesture: UIPanGestureRecognizer) {
         if let spaceView = spaceView {
             switch (gesture.state) {
-            case .ended, .cancelled, .possible:
-                self.isTouched = false
-                
-                self.offsetX = spaceView.frame.x
-                self.offsetY = spaceView.frame.y
-                let translation = gesture.translation(in: spaceView)
-                
-                if translation.x > screenWidth / 4 {
-                    hideSpaceView(direction: .right)
-                    swipeAction?()
-                } else if translation.x < -(screenWidth / 4)  {
-                    hideSpaceView(direction: .left)
-                    swipeAction?()
-                } else if spacePosition == .top ? translation.y > spaceView.h * 1.5 : translation.y < -(spaceView.h / 3) {
-                    hideSpaceView(direction: spacePosition == .bot ? .bot : .top)
-                    swipeAction?()
-                } else if spacePosition == .top ? translation.y < -(spaceView.h / 3) : translation.y > spaceView.h / 3 {
-                    hideSpaceView(direction: spacePosition == .top ? .top : .bot)
-                    swipeAction?()
-                } else {
-                    returnView()
-                }
-                
-            case.changed:
-                self.isTouched = true
-                let velocity = gesture.velocity(in: spaceView)
-                let translation = gesture.translation(in: spaceView)
-                
-                if abs(velocity.x) > abs(velocity.y) && spaceView.frame.y == 0 {
-                    for direction in self.possibleDirectionToHide {
-                        switch direction {
-                        case .left:
-                            if translation.x <= 0 {
-                                spaceView.frame.x = translation.x
-                                spaceView.alpha = 1.00 + ((gesture.translation(in: spaceView).x) / 200)
-                            } else {
-                                if self.possibleDirectionToHide.contains(.right) {
-                                    break
-                                } else {
-                                    spaceView.frame.x = 0
+                case .ended, .cancelled, .possible:
+                    self.isTouched = false
+                    self.offsetX = spaceView.frame.x
+                    self.offsetY = spaceView.frame.y
+                    let translation = gesture.translation(in: spaceView)
+                    if translation.x > screenWidth / 4 {
+                        hideSpaceView(direction: .right, isManualy: false)
+                        swipeAction?()
+                    } else if translation.x < -(screenWidth / 4)  {
+                        hideSpaceView(direction: .left, isManualy: false)
+                        swipeAction?()
+                    } else if spacePosition == .top ? translation.y > spaceView.h : translation.y < -(spaceView.h / 3) {
+                        hideSpaceView(direction: spacePosition == .bot ? .top : .bot, isManualy: false)
+                        swipeAction?()
+                    } else if spacePosition == .top ? translation.y < -(spaceView.h / 3) : translation.y > spaceView.h / 3 {
+                        hideSpaceView(direction: spacePosition == .top ? .top : .bot, isManualy: false)
+                        swipeAction?()
+                    } else {
+                        returnView()
+                    }
+                case.changed:
+                    self.isTouched = true
+                    let velocity = gesture.velocity(in: spaceView)
+                    let translation = gesture.translation(in: spaceView)
+                    if abs(velocity.x) > abs(velocity.y) && spaceView.frame.y == 0 {
+                        for direction in self.possibleDirectionToHide {
+                            switch direction {
+                                case .left:
+                                    if translation.x <= 0 {
+                                        spaceView.frame.x = translation.x
+                                        spaceView.alpha = 1.00 + ((gesture.translation(in: spaceView).x) / 200)
+                                    } else {
+                                        if self.possibleDirectionToHide.contains(.right) {
+                                            break
+                                        } else {
+                                            spaceView.frame.x = 0
+                                        }
                                 }
-                            }
-                        case .right:
-                            if translation.x >= 0 {
-                                spaceView.frame.x = translation.x
-                                spaceView.alpha = 1.00 - ((gesture.translation(in: spaceView).x) / 200)
-                            } else {
-                                if self.possibleDirectionToHide.contains(.left) {
-                                    break
-                                } else {
-                                    spaceView.frame.x = 0
+                                case .right:
+                                    if translation.x >= 0 {
+                                        spaceView.frame.x = translation.x
+                                        spaceView.alpha = 1.00 - ((gesture.translation(in: spaceView).x) / 200)
+                                    } else {
+                                        if self.possibleDirectionToHide.contains(.left) {
+                                            break
+                                        } else {
+                                            spaceView.frame.x = 0
+                                        }
                                 }
+                                default:
+                                    break
                             }
-                        default:
-                            break
                         }
                     }
-                }
-                if abs(velocity.y) > abs(velocity.x) && spaceView.frame.x == 0 {
-                    for direction in self.possibleDirectionToHide {
-                        switch direction {
-                        case .top:
-                            if translation.y <= 0 {
-                                spaceView.frame.y = translation.y
-                                spaceView.alpha = 1.00 + ((gesture.translation(in: spaceView).y) / 100)
-                            } else {
-                                if self.possibleDirectionToHide.contains(.bot) {
-                                    break
-                                } else {
-                                    spaceView.frame.y = 0
+                    if abs(velocity.y) > abs(velocity.x) && spaceView.frame.x == 0 {
+                        for direction in self.possibleDirectionToHide {
+                            switch direction {
+                                case .top:
+                                    if translation.y <= 0 {
+                                        spaceView.frame.y = translation.y
+                                        spaceView.alpha = 1.00 + ((gesture.translation(in: spaceView).y) / 100)
+                                    } else {
+                                        if self.possibleDirectionToHide.contains(.bot) {
+                                            break
+                                        } else {
+                                            spaceView.frame.y = 0
+                                        }
                                 }
-                            }
-                        case .bot:
-                            if translation.y >= 0 {
-                                spaceView.frame.y = translation.y
-                                spaceView.alpha = 1.00 - ((gesture.translation(in: spaceView).y) / 100)
-                            } else {
-                                if self.possibleDirectionToHide.contains(.top) {
-                                    break
+                            case .bot:
+                                if translation.y >= 0 {
+                                    spaceView.frame.y = translation.y
+                                    spaceView.alpha = 1.00 - ((gesture.translation(in: spaceView).y) / 100)
                                 } else {
-                                    spaceView.frame.y = 0
+                                    if self.possibleDirectionToHide.contains(.top) {
+                                        break
+                                    } else {
+                                        spaceView.frame.y = 0
+                                    }
                                 }
+                            default:
+                                break
                             }
-                        default:
-                            break
                         }
                     }
-                }
-                break
-            case .began:
-                self.isTouched = true
-            default:
-                break
+                    break
+                case .began:
+                    self.isTouched = true
+                default:
+                    break
             }
         }
     }
     
-    private func hideSpaceView(direction: HideDirection) {
+    private func hideSpaceView(direction: HideDirection, isManualy: Bool) {
         UIView.animate(withDuration: spaceHideDuration, delay: spaceHideDelay, options: .curveEaseOut, animations: ({
             switch direction {
-            case .left:
-                self.spaceView?.x = -(self.spaceView?.w)!
-                self.spaceView?.alpha = 0
-                break
-            case .right:
-                self.spaceView?.x = (self.spaceView?.w)!
-                self.spaceView?.alpha = 0
-                break
-            case .top:
-                self.spaceView?.y = 0 - self.spaceHeight
-                self.spaceView?.alpha = 0
-                break
-            case .bot:
-                self.spaceView?.frame.y = self.offsetY + self.spaceHeight
-                self.spaceView?.alpha = 0
-                break
+                case .left:
+                    if self.possibleDirectionToHide.contains(.left) {
+                        self.spaceView?.x = -(self.spaceView?.w)!
+                        self.spaceView?.alpha = 0
+                        self.canRemoveWindow = true
+                        break
+                    }
+                    self.canRemoveWindow = false
+                case .right:
+                    if self.possibleDirectionToHide.contains(.right) {
+                        self.spaceView?.x = (self.spaceView?.w)!
+                        self.spaceView?.alpha = 0
+                        self.canRemoveWindow = true
+                        break
+                    }
+                    self.canRemoveWindow = false
+                case .top:
+                    if self.possibleDirectionToHide.contains(.top) || isManualy {
+                        self.spaceView?.y = self.offsetY - self.spaceHeight
+                        self.spaceView?.alpha = 0
+                        self.canRemoveWindow = true
+                        break
+                    }
+                    self.canRemoveWindow = false
+                case .bot:
+                    if self.possibleDirectionToHide.contains(.bot) || isManualy {
+                        self.spaceView?.frame.y = self.offsetY + self.spaceHeight
+                        self.spaceView?.alpha = 0
+                        self.canRemoveWindow = true
+                        break
+                    }
+                    self.canRemoveWindow = false
             }
-        }), completion: ({ some in
-            self.removeWindow()
+        }), completion: ({ a in
+            if self.canRemoveWindow {
+                self.removeWindow()
+            }
+            self.canRemoveWindow = true
         }))
     }
     
@@ -306,7 +321,7 @@ public class SpaceView {
     
     private func startTimer() {
         runThisAfterDelay(seconds: shouldAutoHide && !self.isTouched ? self.spaceHideTimer : Double(INT32_MAX)) { () -> () in
-            self.hideSpaceView(direction: self.spacePosition == .top ? .top : .bot)
+            self.hideSpaceView(direction: self.spacePosition == .top ? .top : .bot, isManualy: true)
         }
     }
     
