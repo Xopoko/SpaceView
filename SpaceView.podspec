@@ -12,7 +12,7 @@ Library to display the amazing messages to alert the user. You can easily call t
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'Horoko' => 'alonsik1@gmail.com' }
   s.source           = { :git => 'https://github.com/Xopoko/SpaceView.git', :tag => s.version.to_s }
-
+  s.swift_version    = '5.0'
   s.ios.deployment_target = '8.0'
 
   s.source_files = 'SpaceView/Classes/*'
