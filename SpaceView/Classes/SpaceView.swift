@@ -7,18 +7,16 @@
 //
 
 import UIKit
-import Foundation
 
 public class SpaceView {
-    
-    var spaceColor: UIColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.90)
+    var spaceColor: UIColor = UIColor(white: 0, alpha: 0.9)
     var spaceDescription = ""
     var spaceTitle = ""
-    var spaceHeight: CGFloat = 64
+    var spaceHeight: CGFloat = UIDevice.current.hasNotch ? 88 : 64
     var canHideByTap = true
-    var tapAction: (() -> ())? = nil
-    var swipeAction: (() -> ())? = nil
-    var buttonAction: (() -> ())? = nil
+    var tapAction: (() -> Void)?
+    var swipeAction: (() -> Void)?
+    var buttonAction: (() -> Void)?
     var spaceView: UIView?
     var spaceHideTimer = 2.0
     var spaceShowDuration = 0.3
@@ -27,8 +25,8 @@ public class SpaceView {
     var spaceHideDelay = 0.0
     var spaceShowDelay = 0.0
     var spaceReturnDelay = 0.0
-    var possibleDirectionToHide = [HideDirection.left, HideDirection.right, HideDirection.top, HideDirection.bot]
-    var image: UIImage? = nil
+    var possibleDirectionToHide: [HideDirection] = [.left, .right, .top, .bot]
+    var image: UIImage?
     var titleView = UILabel()
     var descriptionView = UILabel()
     var titleColor = UIColor.white
@@ -36,59 +34,67 @@ public class SpaceView {
     var titleFont = UIFont.systemFont(ofSize: 17)
     var descriptionFont = UIFont.systemFont(ofSize: 17)
     var shouldAutoHide = true
-    var spaceStyle: SpaceStyles? = nil
+    var spaceStyle: SpaceStyles?
     var spacePosition: SpacePosition = .top
     
-    var screenOrientation: UIInterfaceOrientation {
+    private var screenOrientation: UIInterfaceOrientation {
         return UIApplication.shared.statusBarOrientation
     }
     
-    var screenWidth: CGFloat {
-        if UIInterfaceOrientationIsPortrait(screenOrientation) {
+    private var screenWidth: CGFloat {
+        if UIInterfaceOrientation.portrait == screenOrientation {
             return UIScreen.main.bounds.size.width
         } else {
             return UIScreen.main.bounds.size.height
         }
     }
     
-    var screenHeight: CGFloat {
-        if UIInterfaceOrientationIsPortrait(screenOrientation) {
+    private var screenHeight: CGFloat {
+        if UIInterfaceOrientation.portrait == screenOrientation {
             return UIScreen.main.bounds.size.height
         } else {
             return UIScreen.main.bounds.size.width
         }
     }
     
-    private var mWindow: UIWindow?
+    private var topInset: CGFloat {
+        if #available(iOS 11.0, *) {
+            return spaceWindow?.safeAreaInsets.top ?? 44
+        } else {
+            return 0
+        }
+    }
+    
+    private var spaceWindow: UIWindow?
     private var offsetX: CGFloat = 0.0
     private var offsetY: CGFloat = 0.0
     private var offsetAlpha: CGFloat = 0.0
     private var isTouched = false
     private var canRemoveWindow = true
     
-    init (spaceOptions: [spaceOptions]?) {
+    init(spaceOptions: [SpaceOptions]?) {
         if let options = spaceOptions {
             setOptions(options: options)
         }
     }
     
-    init (title: String, spaceOptions: [spaceOptions]?) {
-        self.spaceTitle = title
+    init(title: String, spaceOptions: [SpaceOptions]?) {
+        spaceTitle = title
         if let options = spaceOptions {
             setOptions(options: options)
         }
     }
     
-    init (title: String, description: String, spaceOptions: [spaceOptions]?) {
-        self.spaceTitle = title
-        self.spaceDescription = description
+    init(title: String, description: String, spaceOptions: [SpaceOptions]?) {
+        spaceTitle = title
+        spaceDescription = description
         if let options = spaceOptions {
             setOptions(options: options)
         }
     }
     
     deinit {
-        NotificationCenter.default.removeObserver(self, name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
+        NotificationCenter.default.removeObserver(self, name: UIDevice.orientationDidChangeNotification, object: nil)
     }
     
     func show() {
@@ -98,161 +104,160 @@ public class SpaceView {
             windowFrame = CGRect(x: 0, y: screenHeight - spaceHeight, width: screenWidth, height: spaceHeight)
             spaceFrame = CGRect(x: 0, y: screenHeight, width: screenWidth, height: spaceHeight)
         }
-        mWindow = UIWindow(frame: windowFrame)
-        mWindow?.windowLevel = UIWindowLevelStatusBar
-        mWindow?.isHidden = false
-        mWindow?.makeKeyAndVisible()
-        mWindow?.windowLevel = (UIWindowLevelStatusBar + 1)
+        spaceWindow = UIWindow(frame: windowFrame)
+        spaceWindow?.windowLevel = UIWindow.Level.statusBar
+        spaceWindow?.isHidden = false
+        spaceWindow?.makeKeyAndVisible()
+        spaceWindow?.windowLevel = (UIWindow.Level.statusBar + 1)
         if spaceView == nil {
             spaceView = makeContent()
         }
-        mWindow?.addSubview(spaceView!)
+        spaceWindow?.addSubview(spaceView!)
         spaceView?.frame = spaceFrame
         
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
-        
         spaceView?.addGestureRecognizer(tap)
-        
         spaceView?.isUserInteractionEnabled = true
         
-        self.animateShow()
-        self.addHideGesture()
+        animateShow()
+        addHideGesture()
     }
     
     @objc func handleTap(_ sender: UITapGestureRecognizer? = nil) {
-            self.tapAction?()
-        if self.canHideByTap {
-            self.hideSpaceView(direction: .top, isManualy: true)
+        tapAction?()
+        if canHideByTap {
+            hideSpaceView(direction: .top, isManualy: true)
         }
     }
 
     @objc func handleHideGesture(_ gesture: UIPanGestureRecognizer) {
-        if let spaceView = spaceView {
-            switch (gesture.state) {
-                case .ended, .cancelled, .possible:
-                    self.isTouched = false
-                    self.offsetX = spaceView.frame.x
-                    self.offsetY = spaceView.frame.y
-                    let translation = gesture.translation(in: spaceView)
-                    if translation.x > screenWidth / 4 {
-                        hideSpaceView(direction: .right, isManualy: false)
-                        swipeAction?()
-                    } else if translation.x < -(screenWidth / 4)  {
-                        hideSpaceView(direction: .left, isManualy: false)
-                        swipeAction?()
-                    } else if spacePosition == .top ? translation.y > spaceView.h : translation.y < -(spaceView.h / 3) {
-                        hideSpaceView(direction: spacePosition == .bot ? .top : .bot, isManualy: false)
-                        swipeAction?()
-                    } else if spacePosition == .top ? translation.y < -(spaceView.h / 3) : translation.y > spaceView.h / 3 {
-                        hideSpaceView(direction: spacePosition == .top ? .top : .bot, isManualy: false)
-                        swipeAction?()
-                    } else {
-                        returnView()
-                    }
-                case.changed:
-                    self.isTouched = true
-                    let velocity = gesture.velocity(in: spaceView)
-                    let translation = gesture.translation(in: spaceView)
-                    if abs(velocity.x) > abs(velocity.y) && spaceView.frame.y == 0 {
-                        for direction in self.possibleDirectionToHide {
-                            switch direction {
-                                case .left:
-                                    if translation.x <= 0 {
-                                        spaceView.frame.x = translation.x
-                                        spaceView.alpha = 1.00 + ((gesture.translation(in: spaceView).x) / 200)
-                                    } else {
-                                        if self.possibleDirectionToHide.contains(.right) {
-                                            break
-                                        } else {
-                                            spaceView.frame.x = 0
-                                        }
-                                }
-                                case .right:
-                                    if translation.x >= 0 {
-                                        spaceView.frame.x = translation.x
-                                        spaceView.alpha = 1.00 - ((gesture.translation(in: spaceView).x) / 200)
-                                    } else {
-                                        if self.possibleDirectionToHide.contains(.left) {
-                                            break
-                                        } else {
-                                            spaceView.frame.x = 0
-                                        }
-                                }
-                                default:
-                                    break
-                            }
-                        }
-                    }
-                    if abs(velocity.y) > abs(velocity.x) && spaceView.frame.x == 0 {
-                        for direction in self.possibleDirectionToHide {
-                            switch direction {
-                                case .top:
-                                    if translation.y <= 0 {
-                                        spaceView.frame.y = translation.y
-                                        spaceView.alpha = 1.00 + ((gesture.translation(in: spaceView).y) / 100)
-                                    } else {
-                                        if self.possibleDirectionToHide.contains(.bot) {
-                                            break
-                                        } else {
-                                            spaceView.frame.y = 0
-                                        }
-                                }
-                            case .bot:
-                                if translation.y >= 0 {
-                                    spaceView.frame.y = translation.y
-                                    spaceView.alpha = 1.00 - ((gesture.translation(in: spaceView).y) / 100)
-                                } else {
-                                    if self.possibleDirectionToHide.contains(.top) {
-                                        break
-                                    } else {
-                                        spaceView.frame.y = 0
-                                    }
-                                }
-                            default:
-                                break
-                            }
-                        }
-                    }
-                    break
-                case .began:
-                    self.isTouched = true
-                default:
-                    break
+        guard let spaceView = spaceView else { return }
+        switch (gesture.state) {
+        case .ended, .cancelled, .possible:
+            isTouched = false
+            offsetX = spaceView.frame.origin.x
+            offsetY = spaceView.frame.origin.y
+            let translation = gesture.translation(in: spaceView)
+            switch true {
+            case translation.x > screenWidth / 4:
+                hideSpaceView(direction: .right, isManualy: false)
+                swipeAction?()
+            case translation.x < -(screenWidth / 4):
+                hideSpaceView(direction: .left, isManualy: false)
+                swipeAction?()
+            case spacePosition == .top ? translation.y > spaceView.h : translation.y < -(spaceView.h / 3):
+                hideSpaceView(direction: spacePosition == .bot ? .top : .bot, isManualy: false)
+                swipeAction?()
+            case spacePosition == .top ? translation.y < -(spaceView.h / 3) : translation.y > spaceView.h / 3:
+                hideSpaceView(direction: spacePosition == .top ? .top : .bot, isManualy: false)
+                swipeAction?()
+            default:
+                returnView()
             }
+        case.changed:
+            self.isTouched = true
+            let velocity = gesture.velocity(in: spaceView)
+            let translation = gesture.translation(in: spaceView)
+            if abs(velocity.x) > abs(velocity.y) && spaceView.frame.origin.y == 0 {
+                for direction in possibleDirectionToHide {
+                    switch direction {
+                    case .left:
+                        if translation.x <= 0 {
+                            spaceView.frame.origin.x = translation.x
+                            spaceView.alpha = 1.00 + ((gesture.translation(in: spaceView).x) / 200)
+                        } else {
+                            if possibleDirectionToHide.contains(.right) {
+                                break
+                            } else {
+                                spaceView.frame.origin.x = 0
+                            }
+                        }
+                    case .right:
+                        if translation.x >= 0 {
+                            spaceView.frame.origin.x = translation.x
+                            spaceView.alpha = 1.00 - ((gesture.translation(in: spaceView).x) / 200)
+                        } else {
+                            if possibleDirectionToHide.contains(.left) {
+                                break
+                            } else {
+                                spaceView.frame.origin.x = 0
+                            }
+                        }
+                    default:
+                        break
+                    }
+                }
+            }
+            if abs(velocity.y) > abs(velocity.x) && spaceView.frame.origin.x == 0 {
+                for direction in possibleDirectionToHide {
+                    switch direction {
+                    case .top:
+                        if translation.y <= 0 {
+                            spaceView.frame.origin.y = translation.y
+                            spaceView.alpha = 1.00 + ((gesture.translation(in: spaceView).y) / 100)
+                        } else {
+                            if possibleDirectionToHide.contains(.bot) {
+                                break
+                            } else {
+                                spaceView.frame.origin.y = 0
+                            }
+                        }
+                    case .bot:
+                        if translation.y >= 0 {
+                            spaceView.frame.origin.y = translation.y
+                            spaceView.alpha = 1.00 - ((gesture.translation(in: spaceView).y) / 100)
+                        } else {
+                            if possibleDirectionToHide.contains(.top) {
+                                break
+                            } else {
+                                spaceView.frame.origin.y = 0
+                            }
+                        }
+                    default:
+                        break
+                    }
+                }
+            }
+            break
+        case .began:
+            self.isTouched = true
+        default:
+            break
         }
     }
     
     private func hideSpaceView(direction: HideDirection, isManualy: Bool) {
         UIView.animate(withDuration: spaceHideDuration, delay: spaceHideDelay, options: .curveEaseOut, animations: ({
+            guard let spaceView = self.spaceView else { return }
             switch direction {
                 case .left:
                     if self.possibleDirectionToHide.contains(.left) {
-                        self.spaceView?.x = -(self.spaceView?.w)!
-                        self.spaceView?.alpha = 0
+                        spaceView.x = -spaceView.w
+                        spaceView.alpha = 0
                         self.canRemoveWindow = true
                         break
                     }
                     self.canRemoveWindow = false
                 case .right:
                     if self.possibleDirectionToHide.contains(.right) {
-                        self.spaceView?.x = (self.spaceView?.w)!
-                        self.spaceView?.alpha = 0
+                        spaceView.x = spaceView.w
+                        spaceView.alpha = 0
                         self.canRemoveWindow = true
                         break
                     }
                     self.canRemoveWindow = false
                 case .top:
                     if self.possibleDirectionToHide.contains(.top) || isManualy {
-                        self.spaceView?.y = self.offsetY - self.spaceHeight
-                        self.spaceView?.alpha = 0
+                        spaceView.y = self.offsetY - self.spaceHeight
+                        spaceView.alpha = 0
                         self.canRemoveWindow = true
                         break
                     }
                     self.canRemoveWindow = false
                 case .bot:
                     if self.possibleDirectionToHide.contains(.bot) || isManualy {
-                        self.spaceView?.frame.y = self.offsetY + self.spaceHeight
-                        self.spaceView?.alpha = 0
+                        spaceView.frame.origin.y = self.offsetY + self.spaceHeight
+                        spaceView.alpha = 0
                         self.canRemoveWindow = true
                         break
                     }
@@ -266,7 +271,7 @@ public class SpaceView {
         }))
     }
     
-    private func setOptions(options: [spaceOptions]) {
+    private func setOptions(options: [SpaceOptions]) {
         for option in options {
             switch (option) {
             case let .spaceColor(color): spaceColor = color
@@ -302,7 +307,7 @@ public class SpaceView {
     private func animateShow() {
         UIView.animate(withDuration: spaceShowDuration, delay: spaceShowDelay, options: .curveEaseOut, animations: ({
             self.spaceView?.y = 0
-        }), completion: ({ a in
+        }), completion: ({ _ in
             self.startTimer()
         }))
     }
@@ -312,7 +317,7 @@ public class SpaceView {
             self.spaceView?.x = 0
             self.spaceView?.y = 0
             self.spaceView?.alpha = 1.0
-        }), completion: ({ a in
+        }), completion: ({ _ in
             self.offsetX = 0
             self.offsetY = 0
             self.startTimer()
@@ -326,9 +331,9 @@ public class SpaceView {
     }
     
     private func removeWindow() {
-        mWindow?.windowLevel = (UIWindowLevelStatusBar - 1)
-        mWindow?.removeFromSuperview()
-        mWindow = nil
+        spaceWindow?.windowLevel = (UIWindow.Level.statusBar - 1)
+        spaceWindow?.removeFromSuperview()
+        spaceWindow = nil
         spaceView = nil
         image = nil
         tapAction = nil
@@ -362,14 +367,37 @@ public class SpaceView {
             contentView.addSubview(imageView!)
             imageView!.translatesAutoresizingMaskIntoConstraints = false
 
-            let imageCenterY = NSLayoutConstraint(item: imageView!, attribute: NSLayoutAttribute.centerY, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.centerY, multiplier: 1, constant: 0)
-            let imageLeading = NSLayoutConstraint(item: imageView!, attribute: NSLayoutAttribute.leading, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.leading, multiplier: 1, constant: 8)
-            let imageHeight = NSLayoutConstraint(item: imageView!, attribute: NSLayoutAttribute.height, relatedBy: NSLayoutRelation.equal, toItem: nil, attribute: NSLayoutAttribute.notAnAttribute, multiplier: 1, constant: 35)
-            let imageWidth = NSLayoutConstraint(item: imageView!, attribute: NSLayoutAttribute.width, relatedBy: NSLayoutRelation.equal, toItem: nil, attribute: NSLayoutAttribute.notAnAttribute, multiplier: 1, constant: 35)
+            let imageCenterY = NSLayoutConstraint(item: imageView!,
+                                                  attribute: NSLayoutConstraint.Attribute.centerY,
+                                                  relatedBy: NSLayoutConstraint.Relation.equal,
+                                                  toItem: contentView,
+                                                  attribute: NSLayoutConstraint.Attribute.centerY,
+                                                  multiplier: 1,
+                                                  constant: 0)
+            let imageLeading = NSLayoutConstraint(item: imageView!,
+                                                  attribute: NSLayoutConstraint.Attribute.leading,
+                                                  relatedBy: NSLayoutConstraint.Relation.equal,
+                                                  toItem: contentView,
+                                                  attribute: NSLayoutConstraint.Attribute.leading,
+                                                  multiplier: 1,
+                                                  constant: 8)
+            let imageHeight = NSLayoutConstraint(item: imageView!,
+                                                 attribute: NSLayoutConstraint.Attribute.height,
+                                                 relatedBy: NSLayoutConstraint.Relation.equal,
+                                                 toItem: nil,
+                                                 attribute: NSLayoutConstraint.Attribute.notAnAttribute,
+                                                 multiplier: 1,
+                                                 constant: 35)
+            let imageWidth = NSLayoutConstraint(item: imageView!,
+                                                attribute: NSLayoutConstraint.Attribute.width,
+                                                relatedBy: NSLayoutConstraint.Relation.equal,
+                                                toItem: nil,
+                                                attribute: NSLayoutConstraint.Attribute.notAnAttribute,
+                                                multiplier: 1,
+                                                constant: 35)
             contentView.addConstraints([imageCenterY, imageLeading, imageHeight, imageWidth])
         }
         
-        let titleView = UILabel()
         titleView.text = spaceTitle
         titleView.textColor = .white
         titleView.numberOfLines = 2
@@ -377,12 +405,36 @@ public class SpaceView {
         contentView.addSubview(titleView)
         titleView.translatesAutoresizingMaskIntoConstraints = false
         
-        let titleCenterY = NSLayoutConstraint(item: titleView, attribute: NSLayoutAttribute.centerY, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.centerY, multiplier: 1, constant: 0)
-        var titleLeading = NSLayoutConstraint(item: titleView, attribute: NSLayoutAttribute.leading, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.leading, multiplier: 1, constant: 16)
-        let titleTrailing = NSLayoutConstraint(item: titleView, attribute: NSLayoutAttribute.trailing, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.trailing, multiplier: 1, constant: -16)
+        let titleCenterY = NSLayoutConstraint(item: titleView,
+                                              attribute: NSLayoutConstraint.Attribute.centerY,
+                                              relatedBy: NSLayoutConstraint.Relation.equal,
+                                              toItem: contentView,
+                                              attribute: NSLayoutConstraint.Attribute.centerY,
+                                              multiplier: 1,
+                                              constant: 0)
+        var titleLeading = NSLayoutConstraint(item: titleView,
+                                              attribute: NSLayoutConstraint.Attribute.leading,
+                                              relatedBy: NSLayoutConstraint.Relation.equal,
+                                              toItem: contentView,
+                                              attribute: NSLayoutConstraint.Attribute.leading,
+                                              multiplier: 1,
+                                              constant: 16)
+        let titleTrailing = NSLayoutConstraint(item: titleView,
+                                               attribute: NSLayoutConstraint.Attribute.trailing,
+                                               relatedBy: NSLayoutConstraint.Relation.equal,
+                                               toItem: contentView,
+                                               attribute: NSLayoutConstraint.Attribute.trailing,
+                                               multiplier: 1,
+                                               constant: -16)
         
         if let imgView = imageView {
-            titleLeading = NSLayoutConstraint(item: titleView, attribute: NSLayoutAttribute.leading, relatedBy: NSLayoutRelation.equal, toItem: imgView, attribute: NSLayoutAttribute.trailing, multiplier: 1, constant: 8)
+            titleLeading = NSLayoutConstraint(item: titleView,
+                                              attribute: NSLayoutConstraint.Attribute.leading,
+                                              relatedBy: NSLayoutConstraint.Relation.equal,
+                                              toItem: imgView,
+                                              attribute: NSLayoutConstraint.Attribute.trailing,
+                                              multiplier: 1,
+                                              constant: 8)
         }
         
         if !spaceDescription.isEmpty {
@@ -394,33 +446,63 @@ public class SpaceView {
             contentView.addSubview(descriptionView)
             
             descriptionView.translatesAutoresizingMaskIntoConstraints = false
-            let titleTop = NSLayoutConstraint(item: titleView, attribute: NSLayoutAttribute.top, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.top, multiplier: 1, constant: 8)
+            let titleTop = NSLayoutConstraint(item: titleView,
+                                              attribute: NSLayoutConstraint.Attribute.top,
+                                              relatedBy: NSLayoutConstraint.Relation.equal,
+                                              toItem: contentView,
+                                              attribute: NSLayoutConstraint.Attribute.top,
+                                              multiplier: 1,
+                                              constant: UIDevice.current.hasNotch ? topInset - 8 : 8)
 
-            let descrTop = NSLayoutConstraint(item: descriptionView, attribute: NSLayoutAttribute.top, relatedBy: NSLayoutRelation.lessThanOrEqual, toItem: titleView, attribute: NSLayoutAttribute.bottom, multiplier: 1, constant: 8)
-            let descBot = NSLayoutConstraint(item: descriptionView, attribute: NSLayoutAttribute.bottom, relatedBy: NSLayoutRelation.lessThanOrEqual, toItem: contentView, attribute: NSLayoutAttribute.bottom, multiplier: 1, constant: -8)
-            var descLeading = NSLayoutConstraint(item: descriptionView, attribute: NSLayoutAttribute.leading, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.leading, multiplier: 1, constant: 16)
-            let descTrailing = NSLayoutConstraint(item: descriptionView, attribute: NSLayoutAttribute.trailing, relatedBy: NSLayoutRelation.equal, toItem: contentView, attribute: NSLayoutAttribute.trailing, multiplier: 1, constant: -16)
+            let descrTop = NSLayoutConstraint(item: descriptionView,
+                                              attribute: NSLayoutConstraint.Attribute.top,
+                                              relatedBy: NSLayoutConstraint.Relation.lessThanOrEqual,
+                                              toItem: titleView,
+                                              attribute: NSLayoutConstraint.Attribute.bottom,
+                                              multiplier: 1,
+                                              constant: 8)
+            let descBot = NSLayoutConstraint(item: descriptionView,
+                                             attribute: NSLayoutConstraint.Attribute.bottom,
+                                             relatedBy: NSLayoutConstraint.Relation.lessThanOrEqual,
+                                             toItem: contentView,
+                                             attribute: NSLayoutConstraint.Attribute.bottom,
+                                             multiplier: 1,
+                                             constant: -8)
+            var descLeading = NSLayoutConstraint(item: descriptionView,
+                                                 attribute: NSLayoutConstraint.Attribute.leading,
+                                                 relatedBy: NSLayoutConstraint.Relation.equal,
+                                                 toItem: contentView,
+                                                 attribute: NSLayoutConstraint.Attribute.leading,
+                                                 multiplier: 1,
+                                                 constant: 16)
+            let descTrailing = NSLayoutConstraint(item: descriptionView,
+                                                  attribute: NSLayoutConstraint.Attribute.trailing,
+                                                  relatedBy: NSLayoutConstraint.Relation.equal,
+                                                  toItem: contentView,
+                                                  attribute: NSLayoutConstraint.Attribute.trailing,
+                                                  multiplier: 1,
+                                                  constant: -16)
             if let imgView = imageView {
-                descLeading = NSLayoutConstraint(item: descriptionView, attribute: NSLayoutAttribute.leading, relatedBy: NSLayoutRelation.equal, toItem: imgView, attribute: NSLayoutAttribute.trailing, multiplier: 1, constant: 16)
+                descLeading = NSLayoutConstraint(item: descriptionView,
+                                                 attribute: NSLayoutConstraint.Attribute.leading,
+                                                 relatedBy: NSLayoutConstraint.Relation.equal,
+                                                 toItem: imgView,
+                                                 attribute: NSLayoutConstraint.Attribute.trailing,
+                                                 multiplier: 1,
+                                                 constant: 16)
             }
             contentView.addConstraints([titleTop, titleLeading, titleTrailing, descrTop, descBot, descLeading, descTrailing])
-            
         } else {
-            contentView.addConstraints([ titleCenterY, titleLeading, titleTrailing])
+            contentView.addConstraints([titleCenterY, titleLeading, titleTrailing])
         }
     
         return contentView
     }
     
     private func runThisAfterDelay(seconds: Double, after: @escaping () -> ()) {
-        runThisAfterDelay(seconds: seconds, queue: DispatchQueue.main, after: after)
-    }
-    
-    private func runThisAfterDelay(seconds: Double, queue: DispatchQueue, after: @escaping ()->()) {
         let time = DispatchTime.now() + Double(Int64(seconds * Double(NSEC_PER_SEC))) / Double(NSEC_PER_SEC)
-        queue.asyncAfter(deadline: time, execute: after)
+        DispatchQueue.main.asyncAfter(deadline: time, execute: after)
     }
-    
 }
 
 public enum HideDirection {
@@ -441,7 +523,7 @@ public enum SpaceStyles {
     case warning
 }
 
-public enum spaceOptions {
+public enum SpaceOptions {
     case spaceColor(color: UIColor)
     case spaceDescription(text: String)
     case spaceTitle(text: String)
@@ -470,87 +552,60 @@ public enum spaceOptions {
     case buttonAction(() -> ())
 }
 
-extension UIView {
-    fileprivate var x: CGFloat {
+internal extension UIView {
+    var x: CGFloat {
         get {
-            return self.frame.origin.x
-        } set(value) {
-            self.frame = CGRect(x: value, y: self.y, width: self.w, height: self.h)
+            return frame.origin.x
+        } set {
+            frame = CGRect(x: newValue, y: y, width: w, height: h)
         }
     }
     
-    fileprivate var y: CGFloat {
+    var y: CGFloat {
         get {
-            return self.frame.origin.y
-        } set(value) {
-            self.frame = CGRect(x: self.x, y: value, width: self.w, height: self.h)
+            return frame.origin.y
+        } set {
+            frame = CGRect(x: x, y: newValue, width: w, height: h)
         }
     }
     
-    fileprivate var w: CGFloat {
+    var w: CGFloat {
         get {
-            return self.frame.size.width
-        } set(value) {
-            self.frame = CGRect(x: self.x, y: self.y, width: value, height: self.h)
+            return frame.size.width
+        } set {
+            frame = CGRect(x: x, y: y, width: newValue, height: h)
         }
     }
     
-    fileprivate var h: CGFloat {
+    var h: CGFloat {
         get {
-            return self.frame.size.height
-        } set(value) {
-            self.frame = CGRect(x: self.x, y: self.y, width: self.w, height: value)
+            return frame.size.height
+        } set {
+            frame = CGRect(x: x, y: y, width: w, height: newValue)
         }
     }
 }
 
-extension CGRect {
-    
-    fileprivate var x: CGFloat {
-        get {
-            return self.origin.x
-        } set(value) {
-            self.origin.x = value
-        }
+public extension UIViewController {
+    func showSpace(spaceOptions: [SpaceOptions]?) {
+        SpaceView(spaceOptions: nil).show()
     }
     
-    fileprivate var y: CGFloat {
-        get {
-            return self.origin.y
-        } set(value) {
-            self.origin.y = value
-        }
+    func showSpace(title: String, spaceOptions: [SpaceOptions]?) {
+        SpaceView(title: title, spaceOptions: spaceOptions).show()
     }
     
-    fileprivate var w: CGFloat {
-        get {
-            return self.size.width
-        } set(value) {
-            self.size.width = value
-        }
-    }
-    
-    fileprivate var h: CGFloat {
-        get {
-            return self.size.height
-        } set(value) {
-            self.size.height = value
-        }
+    func showSpace(title: String, description: String, spaceOptions: [SpaceOptions]?) {
+        SpaceView(title: title, description: description, spaceOptions: spaceOptions).show()
     }
 }
 
-
-extension UIViewController {
-    public func showSpace(spaceOptions: [spaceOptions]?) {
-        let m = SpaceView(spaceOptions: nil)
-        m.show()
-    }
-    public func showSpace(title: String, spaceOptions: [spaceOptions]?) {
-        let m = SpaceView(title: title, spaceOptions: spaceOptions)
-        m.show()
-    }
-    public func showSpace(title: String, description: String, spaceOptions: [spaceOptions]?) {
-        let m = SpaceView(title: title, description: description, spaceOptions: spaceOptions)
-        m.show()
+internal extension UIDevice {
+    var hasNotch: Bool {
+        if #available(iOS 11.0, *) {
+            return UIApplication.shared.keyWindow?.safeAreaInsets.top ?? 0 > 20
+        } else {
+            return false
+        }
     }
 }
