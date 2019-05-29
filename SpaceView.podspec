@@ -3,7 +3,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'SpaceView'
-  s.version          = '1.0.5'
+  s.version          = '1.0.6'
   s.summary          = 'Swift library, for showing awesome messages!'
   s.description      = <<-DESC
 Library to display the amazing messages to alert the user. You can easily call them. Incredibly simple and easy to change to suit your requirements.
